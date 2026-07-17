@@ -19,7 +19,9 @@ const List<String> documentTypes = [
 ];
 
 class UploadDocumentScreen extends ConsumerStatefulWidget {
-  const UploadDocumentScreen({super.key});
+  final Map<String, dynamic>? existingDoc;
+
+  const UploadDocumentScreen({super.key, this.existingDoc});
 
   @override
   ConsumerState<UploadDocumentScreen> createState() => _UploadDocumentScreenState();
@@ -37,6 +39,21 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
   List<File> _selectedFiles = [];
   bool _isUploading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingDoc != null) {
+      final doc = widget.existingDoc!;
+      if (documentTypes.contains(doc['document_type'])) {
+        _selectedType = doc['document_type'];
+      }
+      _titleCtrl.text = doc['title'] ?? '';
+      _notesCtrl.text = doc['notes'] ?? '';
+      if (doc['issue_date'] != null) _issueDate = DateTime.tryParse(doc['issue_date']);
+      if (doc['expiry_date'] != null) _expiryDate = DateTime.tryParse(doc['expiry_date']);
+    }
+  }
+
   Future<void> _pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
@@ -53,7 +70,7 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedFiles.isEmpty) {
+    if (_selectedFiles.isEmpty && widget.existingDoc == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes adjuntar al menos un archivo', style: TextStyle(color: Colors.white)), backgroundColor: Colors.red));
       return;
     }
@@ -82,16 +99,28 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
           'path': filename,
         });
       }
+      
+      List<Map<String, dynamic>> finalFiles = [];
+      if (widget.existingDoc != null && widget.existingDoc!['files'] != null) {
+        finalFiles.addAll(List<Map<String, dynamic>>.from(widget.existingDoc!['files']));
+      }
+      finalFiles.addAll(uploadedFilesMeta);
 
-      await supabase.from('user_documents').insert({
-        'user_id': user.id,
+      final data = {
         'document_type': _selectedType,
         'title': _titleCtrl.text,
         'issue_date': _issueDate?.toIso8601String(),
         'expiry_date': _expiryDate?.toIso8601String(),
         'notes': _notesCtrl.text,
-        'files': uploadedFilesMeta,
-      });
+        'files': finalFiles,
+      };
+
+      if (widget.existingDoc == null) {
+        data['user_id'] = user.id;
+        await supabase.from('user_documents').insert(data);
+      } else {
+        await supabase.from('user_documents').update(data).eq('id', widget.existingDoc!['id']);
+      }
 
       ref.invalidate(userDocumentsProvider);
 
@@ -135,8 +164,9 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.existingDoc != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Subir Documento')),
+      appBar: AppBar(title: Text(isEditing ? 'Editar Documento' : 'Subir Documento')),
       body: _isUploading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -231,6 +261,11 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text('Archivos Adjuntos *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            if (isEditing)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 4.0),
+                                child: Text('Sube nuevos archivos para añadirlos a los existentes.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                              ),
                             const SizedBox(height: 8),
                             const Text('Soporta PDF, JPG, PNG, WEBP (Máx. 10MB/archivo)', style: TextStyle(color: Colors.grey, fontSize: 12)),
                             const SizedBox(height: 16),

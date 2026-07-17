@@ -138,7 +138,10 @@ class UserDocumentsScreen extends ConsumerWidget {
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Editar'),
                       onPressed: () {
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Edición próximamente. Por ahora, elimina y vuelve a subir.')));
+                         Navigator.pop(context); // Close bottom sheet
+                         Navigator.push(context, MaterialPageRoute(
+                           builder: (_) => UploadDocumentScreen(existingDoc: doc),
+                         ));
                       },
                     ),
                   ),
