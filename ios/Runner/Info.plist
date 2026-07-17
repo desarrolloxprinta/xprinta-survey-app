@@ -14,6 +14,8 @@
 		<string>Xprinta Survey necesita acceso a tu ubicación para geolocalizar con precisión las tomas de medidas en las obras.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
 		<string>Xprinta Survey necesita acceso a tu ubicación para geolocalizar con precisión las tomas de medidas.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Xprinta Survey necesita acceso a tu ubicación para mantener la precisión de las coordenadas en los mapas y planos.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
