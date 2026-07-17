@@ -180,10 +180,13 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                                     children: [
                                       const Text('Fecha Emisión', style: TextStyle(fontWeight: FontWeight.bold)),
                                       const SizedBox(height: 8),
-                                      OutlinedButton.icon(
-                                        onPressed: () => _selectDate(context, false),
-                                        icon: const Icon(Icons.calendar_today, size: 16),
-                                        label: Text(_issueDate != null ? "${_issueDate!.day}/${_issueDate!.month}/${_issueDate!.year}" : 'Seleccionar'),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () => _selectDate(context, false),
+                                          icon: const Icon(Icons.calendar_today, size: 16),
+                                          label: Text(_issueDate != null ? "${_issueDate!.day}/${_issueDate!.month}/${_issueDate!.year}" : 'Seleccionar'),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -195,10 +198,13 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                                     children: [
                                       const Text('Fecha Caducidad', style: TextStyle(fontWeight: FontWeight.bold)),
                                       const SizedBox(height: 8),
-                                      OutlinedButton.icon(
-                                        onPressed: () => _selectDate(context, true),
-                                        icon: const Icon(Icons.calendar_today, size: 16),
-                                        label: Text(_expiryDate != null ? "${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}" : 'Seleccionar'),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () => _selectDate(context, true),
+                                          icon: const Icon(Icons.calendar_today, size: 16),
+                                          label: Text(_expiryDate != null ? "${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}" : 'Seleccionar'),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -228,11 +234,13 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                             const SizedBox(height: 8),
                             const Text('Soporta PDF, JPG, PNG, WEBP (Máx. 10MB/archivo)', style: TextStyle(color: Colors.grey, fontSize: 12)),
                             const SizedBox(height: 16),
-                            OutlinedButton.icon(
-                              onPressed: _pickFiles,
-                              icon: const Icon(Icons.upload_file),
-                              label: const Text('Seleccionar Archivos'),
-                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _pickFiles,
+                                icon: const Icon(Icons.upload_file, size: 18),
+                                label: const Text('Seleccionar Archivos'),
+                              ),
                             ),
                             if (_selectedFiles.isNotEmpty) ...[
                               const SizedBox(height: 16),
@@ -250,14 +258,14 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isUploading ? null : _submit,
+                        child: _isUploading 
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Guardar Documento'),
                       ),
-                      child: const Text('Guardar Documento', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
