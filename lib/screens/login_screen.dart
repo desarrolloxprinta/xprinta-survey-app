@@ -165,23 +165,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                           'assets/images/logo-xprina-azul.png',
                           height: 60,
                         ),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Bienvenido',
-                          style: textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E293B),
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Conectando con xprinta.net',
-                          style: textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF64748B),
-                            fontSize: 15,
-                          ),
-                        ),
                         const SizedBox(height: 40),
 
                         if (_errorMessage != null)
@@ -308,6 +291,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
+        const SizedBox(height: 16),
+        const Text(
+          'Sincronizado con Xprinta flow',
+          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -404,6 +392,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             'Volver al código QR',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Sincronizado con Xprinta flow',
+          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ],
     );
