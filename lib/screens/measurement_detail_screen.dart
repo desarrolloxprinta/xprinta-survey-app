@@ -45,6 +45,58 @@ class MeasurementDetailScreen extends ConsumerWidget {
 
   const MeasurementDetailScreen({super.key, required this.projectData});
 
+  Future<void> _scheduleVisit(BuildContext context, WidgetRef ref) async {
+    final DateTime? date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (date == null) return;
+    if (!context.mounted) return;
+
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (time == null) return;
+    if (!context.mounted) return;
+
+    final DateTime scheduledDateTime = DateTime(
+      date.year, date.month, date.day, time.hour, time.minute,
+    );
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await supabase.from('projects').update({
+        'measurement_phase': 'visita_agendada',
+        'scheduled_visit_date': scheduledDateTime.toIso8601String(),
+      }).eq('id', projectData['id']);
+
+      if (context.mounted) {
+        Navigator.pop(context); // close dialog
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Visita agendada correctamente', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.green,
+        ));
+        Navigator.pop(context, true); // Pop screen to refresh
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // close dialog
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error al agendar: $e', style: const TextStyle(color: Colors.white)),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
@@ -277,6 +329,19 @@ class MeasurementDetailScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (projectData['measurement_phase'] != 'medicion_realizada') ...[
+                    OutlinedButton.icon(
+                      onPressed: () => _scheduleVisit(context, ref),
+                      icon: const Icon(Icons.calendar_month),
+                      label: Text(projectData['measurement_phase'] == 'visita_agendada' ? 'Reprogramar Visita' : 'Agendar Visita'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   ElevatedButton.icon(
                     onPressed: () async {
                       final result = await Navigator.push(
