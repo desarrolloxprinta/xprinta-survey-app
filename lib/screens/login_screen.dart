@@ -1,10 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/constants.dart';
 import '../main.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'qr_scanner_screen.dart';
-import '../widgets/animated_glass_container.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +13,7 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -22,9 +22,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _errorMessage;
 
   bool _showEmailLogin = false;
+  late AnimationController _bgController;
+
+  @override
+  void initState() {
+    super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
+    _bgController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -72,121 +83,187 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    const Color(0xFF0F172A),
-                    const Color(0xFF1E293B),
-                    Theme.of(context).primaryColor.withOpacity(0.8),
-                  ]
-                : [
-                    const Color(0xFFF8FAFC),
-                    const Color(0xFFE2E8F0),
-                    Theme.of(context).primaryColor.withOpacity(0.3),
-                  ],
+      backgroundColor: const Color(0xFFF8FAFC), // Pure light background
+      body: Stack(
+        children: [
+          // Background Animated Blobs
+          AnimatedBuilder(
+            animation: _bgController,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  Positioned(
+                    top: -100 + (50 * _bgController.value),
+                    left: -100 + (30 * _bgController.value),
+                    child: Container(
+                      width: 400,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: primaryColor.withOpacity(0.15),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -150 + (60 * (1 - _bgController.value)),
+                    right: -100 + (40 * _bgController.value),
+                    child: Container(
+                      width: 500,
+                      height: 500,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFFF8A00).withOpacity(0.1), // Xprinta Orange accent
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: AnimatedGlassContainer(
-                opacity: isDark ? 0.1 : 0.6,
-                blur: 20,
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        isDark ? 'assets/images/logo-xprinta-blanco.png' : 'assets/images/logo-xprina-azul.png',
-                        height: 70,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Acceso Técnico',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontSize: 32,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Conectando con xprinta.net',
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 48),
+          
+          // Blur Layer
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
+              child: const SizedBox(),
+            ),
+          ),
 
-                      if (_errorMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 24),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent.withOpacity(isDark ? 0.2 : 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: TextStyle(color: isDark ? Colors.white : Colors.red.shade900),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: (Widget child, Animation<double> animation) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.0, 0.1),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: _showEmailLogin ? _buildEmailView(isDark) : _buildQrView(isDark),
+          // Main Content
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 40,
+                        offset: const Offset(0, 10),
                       ),
                     ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Always use the blue logo for light mode
+                        Image.asset(
+                          'assets/images/logo-xprina-azul.png',
+                          height: 60,
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'Bienvenido',
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Conectando con xprinta.net',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFF64748B),
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+
+                        if (_errorMessage != null)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 24),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFFECACA)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline, color: Color(0xFFEF4444)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          switchInCurve: Curves.easeOutQuart,
+                          switchOutCurve: Curves.easeInQuart,
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.0, 0.05),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _showEmailLogin ? _buildEmailView() : _buildQrView(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildQrView(bool isDark) {
+  Widget _buildQrView() {
     return Column(
       key: const ValueKey('qrView'),
       children: [
-        SizedBox(
+        Container(
           width: double.infinity,
-          height: 65,
+          height: 64,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)], // Modern vibrant blue
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2563EB).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
               ),
-              elevation: 8,
-              shadowColor: Theme.of(context).primaryColor.withOpacity(0.5),
             ),
             onPressed: () {
               Navigator.of(context).push(
@@ -198,11 +275,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.qr_code_scanner, size: 28),
+                Icon(Icons.qr_code_scanner, size: 24, color: Colors.white),
                 SizedBox(width: 12),
                 Text(
                   'Vincular con Código QR',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ],
             ),
@@ -211,7 +293,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 24),
         TextButton(
           style: TextButton.styleFrom(
-            foregroundColor: isDark ? Colors.white70 : Colors.black54,
+            foregroundColor: const Color(0xFF64748B),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: () {
             setState(() {
@@ -219,38 +303,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _errorMessage = null;
             });
           },
-          child: const Text('Ingresar con usuario y contraseña (Avanzado)'),
+          child: const Text(
+            'Ingreso manual (Avanzado)',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildEmailView(bool isDark) {
-    final textTheme = Theme.of(context).textTheme;
-    final hintColor = isDark ? Colors.white70 : Colors.black54;
-    final fillColor = isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05);
+  Widget _buildEmailView() {
+    final hintColor = const Color(0xFF94A3B8);
+    final fillColor = const Color(0xFFF1F5F9);
 
     return Column(
       key: const ValueKey('emailView'),
       children: [
-        TextFormField(
+        _buildTextField(
           controller: _emailController,
-          style: textTheme.bodyLarge,
-          decoration: InputDecoration(
-            labelText: 'Correo Electrónico',
-            labelStyle: TextStyle(color: hintColor),
-            prefixIcon: Icon(Icons.email, color: hintColor),
-            filled: true,
-            fillColor: fillColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
-            ),
-          ),
+          label: 'Correo Electrónico',
+          icon: Icons.alternate_email_rounded,
+          hintColor: hintColor,
+          fillColor: fillColor,
           keyboardType: TextInputType.emailAddress,
           validator: (value) {
             if (value == null || value.isEmpty) return 'Ingresa tu correo';
@@ -258,56 +332,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             return null;
           },
         ),
-        const SizedBox(height: 16),
-        TextFormField(
+        const SizedBox(height: 20),
+        _buildTextField(
           controller: _passwordController,
-          style: textTheme.bodyLarge,
-          decoration: InputDecoration(
-            labelText: 'Contraseña',
-            labelStyle: TextStyle(color: hintColor),
-            prefixIcon: Icon(Icons.lock, color: hintColor),
-            filled: true,
-            fillColor: fillColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
-            ),
-          ),
+          label: 'Contraseña',
+          icon: Icons.lock_outline_rounded,
+          hintColor: hintColor,
+          fillColor: fillColor,
           obscureText: true,
           validator: (value) {
             if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
             return null;
           },
         ),
-        const SizedBox(height: 24),
-        SizedBox(
+        const SizedBox(height: 32),
+        Container(
           width: double.infinity,
           height: 60,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2563EB).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
             onPressed: _isLoading ? null : _signIn,
             child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                  )
                 : const Text(
                     'Iniciar Sesión',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16, 
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
           ),
         ),
         const SizedBox(height: 16),
         TextButton(
           style: TextButton.styleFrom(
-            foregroundColor: isDark ? Colors.white70 : Colors.black54,
+            foregroundColor: const Color(0xFF64748B),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           onPressed: () {
             setState(() {
@@ -315,9 +400,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               _errorMessage = null;
             });
           },
-          child: const Text('Volver a Vinculación QR (Recomendado)'),
+          child: const Text(
+            'Volver al código QR',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required Color hintColor,
+    required Color fillColor,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: const TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w500),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: hintColor, fontWeight: FontWeight.w500),
+        prefixIcon: Icon(icon, color: hintColor, size: 22),
+        filled: true,
+        fillColor: fillColor,
+        contentPadding: const EdgeInsets.symmetric(vertical: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+      ),
     );
   }
 }
