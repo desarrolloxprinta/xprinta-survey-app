@@ -94,11 +94,11 @@ serve(async (req) => {
       .update({ status: 'used', used_at: new Date().toISOString() })
       .eq('token', token)
 
-    // Devolver los tokens
+    // Devolver el OTP y email para que la app móvil inicie sesión
     return new Response(
       JSON.stringify({
-        access_token: authData.properties.access_token,
-        refresh_token: authData.properties.refresh_token,
+        email_otp: authData.properties.email_otp,
+        email: userEmail,
         user_id: tokenData.user_id
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

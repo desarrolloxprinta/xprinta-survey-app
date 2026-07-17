@@ -19,20 +19,22 @@ class QrAuthService {
       }
 
       final data = response.data as Map<String, dynamic>;
-      final accessToken = data['access_token'] as String?;
-      final refreshToken = data['refresh_token'] as String?;
+      final emailOtp = data['email_otp'] as String?;
+      final email = data['email'] as String?;
 
-      if (accessToken == null || refreshToken == null) {
-        throw Exception('Respuesta inválida del servidor (tokens ausentes)');
+      if (emailOtp == null || email == null) {
+        throw Exception('Respuesta inválida del servidor (OTP ausente)');
       }
 
-      // En supabase_flutter, setSession permite establecer ambos tokens
-      // Si la firma cambia en alguna versión, la alternativa es usar recoverSession(refreshToken)
-      try {
-        await _supabase.auth.setSession(accessToken);
-      } catch (e) {
-        // En caso de que requiriera un enfoque diferente
-        await _supabase.auth.recoverSession(refreshToken);
+      // Validar el OTP mágicamente generado por el servidor
+      final authResponse = await _supabase.auth.verifyOTP(
+        type: OtpType.magiclink,
+        token: emailOtp,
+        email: email,
+      );
+
+      if (authResponse.session == null) {
+        throw Exception('No se pudo establecer la sesión con el código proporcionado');
       }
       
       debugPrint('Sesión establecida correctamente con QR');
