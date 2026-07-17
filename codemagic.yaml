@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        - app_store_credentials # Environment variables group to be created in Codemagic UI
+        - xprinta-survey # Environment variables group to be created in Codemagic UI
     scripts:
       - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
         script: |
