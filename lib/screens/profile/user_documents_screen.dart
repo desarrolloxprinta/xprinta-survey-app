@@ -274,9 +274,7 @@ class UserDocumentsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                  ),
-                ),
-              );
+                  );
             },
           );
         },
