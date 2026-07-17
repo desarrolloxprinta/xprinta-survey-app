@@ -220,15 +220,11 @@ class UserDocumentsScreen extends ConsumerWidget {
               final doc = docs[index];
               final color = _getStatusColor(doc['expiry_date']);
               
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: InkWell(
-                  onTap: () => _showDocumentDetails(context, ref, doc),
-                  borderRadius: BorderRadius.circular(16),
-                  child: ModernCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+              return ModernCard(
+                onTap: () => _showDocumentDetails(context, ref, doc),
+                child: Padding(
+                  padding: const EdgeInsets.all(0),
+                  child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
