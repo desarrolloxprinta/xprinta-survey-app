@@ -4,6 +4,16 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<key>NSCameraUsageDescription</key>
+		<string>Xprinta Survey necesita acceso a la cámara para escanear códigos QR y capturar fotografías de las instalaciones.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Xprinta Survey necesita acceso a tu galería para poder adjuntar imágenes previas a los partes de trabajo.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Xprinta Survey necesita acceso al micrófono para grabar videos de las instalaciones si es necesario.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Xprinta Survey necesita acceso a tu ubicación para geolocalizar con precisión las tomas de medidas en las obras.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>Xprinta Survey necesita acceso a tu ubicación para geolocalizar con precisión las tomas de medidas.</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
