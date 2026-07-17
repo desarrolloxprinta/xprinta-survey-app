@@ -25,9 +25,10 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
-      - name: Generate App Icons
+      - name: Generate App Icons and Splash Screen
         script: |
           dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
       - name: Install Cocoapods
         script: |
           find . -name "Podfile" -execdir pod install \;

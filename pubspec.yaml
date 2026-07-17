@@ -75,8 +75,11 @@ flutter_launcher_icons:
   min_sdk_android: 21
 
 flutter_native_splash:
-  color: "#121212"
-  image: "assets/images/logo-xprinta-blanco.png"
+  color: "#FFFFFF"
+  image: "web/splash/splahs-logo.png"
+  android_12:
+    image: "web/splash/splahs-logo.png"
+    icon_background_color: "#FFFFFF"
   android: true
   ios: true
 
