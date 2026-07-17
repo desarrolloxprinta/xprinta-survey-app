@@ -140,25 +140,22 @@ class ProfileTab extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 32),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.withOpacity(isDark ? 0.2 : 0.1),
-            foregroundColor: isDark ? Colors.redAccent : Colors.red.shade700,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: isDark ? Colors.redAccent.withOpacity(0.5) : Colors.red.withOpacity(0.3)),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
             ),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-          onPressed: () => _signOut(ref),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.logout),
-              SizedBox(width: 8),
-              Text('Cerrar Sesión', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ],
+            onPressed: () => _signOut(ref),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout, size: 20),
+                SizedBox(width: 8),
+                Text('Cerrar Sesión'),
+              ],
+            ),
           ),
         ),
       ],
