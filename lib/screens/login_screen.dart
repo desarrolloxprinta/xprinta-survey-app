@@ -85,12 +85,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final primaryColor = Theme.of(context).primaryColor;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Pure light background
+      backgroundColor: bgColor,
       body: Stack(
         children: [
-          // Background Animated Blobs
+          // Background Animated Blobs using Theme Colors
           AnimatedBuilder(
             animation: _bgController,
             builder: (context, child) {
@@ -104,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                       height: 400,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: primaryColor.withOpacity(0.15),
+                        color: primaryColor.withOpacity(0.12),
                       ),
                     ),
                   ),
@@ -116,7 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                       height: 500,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFFF8A00).withOpacity(0.1), // Xprinta Orange accent
+                        color: primaryColor.withOpacity(0.08),
                       ),
                     ),
                   ),
@@ -183,7 +184,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 14),
+                                    style: textTheme.bodyMedium?.copyWith(color: const Color(0xFFB91C1C)),
                                   ),
                                 ),
                               ],
@@ -206,7 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                               ),
                             );
                           },
-                          child: _showEmailLogin ? _buildEmailView() : _buildQrView(),
+                          child: _showEmailLogin ? _buildEmailView(context) : _buildQrView(context),
                         ),
                       ],
                     ),
@@ -220,7 +221,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     );
   }
 
-  Widget _buildQrView() {
+  Widget _buildQrView(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       key: const ValueKey('qrView'),
       children: [
@@ -229,12 +233,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           height: 64,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)], // Modern vibrant blue
-            ),
+            color: primaryColor,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2563EB).withOpacity(0.3),
+                color: primaryColor.withOpacity(0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -255,16 +257,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                 ),
               );
             },
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.qr_code_scanner, size: 24, color: Colors.white),
-                SizedBox(width: 12),
+                const Icon(Icons.qr_code_scanner, size: 24, color: Colors.white),
+                const SizedBox(width: 12),
                 Text(
                   'Vincular con Código QR',
-                  style: TextStyle(
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w700,
+                  style: textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     letterSpacing: 0.3,
                   ),
@@ -276,7 +276,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
         const SizedBox(height: 24),
         TextButton(
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF64748B),
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -286,28 +286,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
               _errorMessage = null;
             });
           },
-          child: const Text(
+          child: Text(
             'Ingreso manual (Avanzado)',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Sincronizado con Xprinta flow',
-          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+          style: textTheme.bodyMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ],
     );
   }
 
-  Widget _buildEmailView() {
-    final hintColor = const Color(0xFF94A3B8);
+  Widget _buildEmailView(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).primaryColor;
+    final hintColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
     final fillColor = const Color(0xFFF1F5F9);
 
     return Column(
       key: const ValueKey('emailView'),
       children: [
         _buildTextField(
+          context: context,
           controller: _emailController,
           label: 'Correo Electrónico',
           icon: Icons.alternate_email_rounded,
@@ -322,6 +325,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
         ),
         const SizedBox(height: 20),
         _buildTextField(
+          context: context,
           controller: _passwordController,
           label: 'Contraseña',
           icon: Icons.lock_outline_rounded,
@@ -339,12 +343,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           height: 60,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-            ),
+            color: primaryColor,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2563EB).withOpacity(0.3),
+                color: primaryColor.withOpacity(0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -365,20 +367,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                     height: 24,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
                   )
-                : const Text(
+                : Text(
                     'Iniciar Sesión',
-                    style: TextStyle(
-                      fontSize: 16, 
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                    style: textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
           ),
         ),
         const SizedBox(height: 16),
         TextButton(
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF64748B),
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -388,21 +386,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
               _errorMessage = null;
             });
           },
-          child: const Text(
+          child: Text(
             'Volver al código QR',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Sincronizado con Xprinta flow',
-          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+          style: textTheme.bodyMedium?.copyWith(fontSize: 12, fontWeight: FontWeight.w500),
         ),
       ],
     );
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -412,15 +411,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
+    final textTheme = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).primaryColor;
+
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w500),
+      style: textTheme.bodyLarge,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: hintColor, fontWeight: FontWeight.w500),
+        labelStyle: textTheme.bodyLarge?.copyWith(color: hintColor),
         prefixIcon: Icon(icon, color: hintColor, size: 22),
         filled: true,
         fillColor: fillColor,
@@ -431,7 +433,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
