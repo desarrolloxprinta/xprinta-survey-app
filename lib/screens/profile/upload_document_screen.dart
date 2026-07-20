@@ -94,6 +94,7 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
       final response = await supabase.functions.invoke('analyze-document', body: {
         'imageBase64': base64Image,
         'mimeType': mimeType,
+        'documentType': _selectedType,
       });
 
       if (response.data != null) {

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, mimeType } = await req.json()
+    const { imageBase64, mimeType, documentType } = await req.json()
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
 
     if (!geminiApiKey) {
@@ -24,10 +24,24 @@ serve(async (req) => {
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`
 
+    const systemPrompt = `Eres un experto en analizar documentos legales, laborales y certificados en España.
+El usuario ha indicado que este documento es del tipo: '${documentType || 'Desconocido'}'.
+Tu objetivo es extraer la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date).
+
+REGLAS ESPECÍFICAS DE BÚSQUEDA:
+1. DNIs y Pasaportes: La caducidad suele estar bajo 'VALIDEZ' y la emisión bajo 'FECHA DE EMISIÓN', frecuentemente en formato 'DD MM AA' (ej. '01 01 32' -> 2032-01-01).
+2. Certificados de Seguridad Social o Hacienda (Corriente de pago): Suelen ser válidos por 6 meses. Busca frases como "validez de X meses" desde la fecha de expedición, o "Válido hasta".
+3. Cursos PRL, Trabajos en Altura, Riesgo Eléctrico: Busca "Fecha de caducidad", "Válido hasta", "Próximo reciclaje", o suma los años de validez indicados a la fecha del curso.
+4. Carnet de Conducir: Fecha de expedición (4a) y fecha de caducidad (4b).
+
+Convierte SIEMPRE cualquier fecha encontrada al formato estricto: {"issue_date": "YYYY-MM-DD", "expiry_date": "YYYY-MM-DD"}.
+Si el documento definitivamente no tiene caducidad, devuelve null para expiry_date. Si no tiene emisión, null para issue_date.
+Analiza meticulosamente toda la imagen.`;
+
     const payload = {
       contents: [{
         parts: [
-          { text: "Eres un experto en analizar DNIs, pasaportes y certificados. Extrae la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date). IMPORTANTE: En los DNI españoles, la fecha de caducidad aparece bajo el texto 'VALIDEZ' y la emisión bajo 'FECHA DE EMISIÓN', frecuentemente en formato 'DD MM AA' (ej. '01 01 32' significa 2032-01-01). Convierte cualquier fecha encontrada al formato estricto: {\"issue_date\": \"YYYY-MM-DD\", \"expiry_date\": \"YYYY-MM-DD\"}. Si el documento definitivamente no tiene caducidad o emisión, devuelve null para ese campo. Analiza meticulosamente toda la imagen." },
+          { text: systemPrompt },
           {
             inlineData: {
               mimeType: mimeType || 'image/jpeg',
