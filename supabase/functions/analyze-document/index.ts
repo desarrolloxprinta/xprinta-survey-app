@@ -27,7 +27,7 @@ serve(async (req) => {
     const payload = {
       contents: [{
         parts: [
-          { text: "Eres un asistente experto en analizar documentos legales, DNIs, pasaportes y certificados laborales. Extrae la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date) de los documentos que se te envían en las imágenes. Devuelve un objeto JSON con el siguiente formato estricto: {\"issue_date\": \"YYYY-MM-DD\", \"expiry_date\": \"YYYY-MM-DD\"}. Si el documento no tiene caducidad o emisión, devuelve null para ese campo. Si es ilegible, devuelve {\"error\": \"Ilegible\"}." },
+          { text: "Eres un experto en analizar DNIs, pasaportes y certificados. Extrae la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date). IMPORTANTE: En los DNI españoles, la fecha de caducidad aparece bajo el texto 'VALIDEZ' y la emisión bajo 'FECHA DE EMISIÓN', frecuentemente en formato 'DD MM AA' (ej. '01 01 32' significa 2032-01-01). Convierte cualquier fecha encontrada al formato estricto: {\"issue_date\": \"YYYY-MM-DD\", \"expiry_date\": \"YYYY-MM-DD\"}. Si el documento definitivamente no tiene caducidad o emisión, devuelve null para ese campo. Analiza meticulosamente toda la imagen." },
           {
             inlineData: {
               mimeType: mimeType || 'image/jpeg',
