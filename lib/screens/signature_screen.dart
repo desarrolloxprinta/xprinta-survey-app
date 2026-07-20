@@ -25,6 +25,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
     exportBackgroundColor: Colors.white,
   );
   bool _isGenerating = false;
+  int _rating = 0;
 
   @override
   void dispose() {
@@ -35,8 +36,8 @@ class _SignatureScreenState extends State<SignatureScreen> {
   }
 
   Future<void> _generateAndUploadPdf() async {
-    if (_nameCtrl.text.isEmpty || _dniCtrl.text.isEmpty || _signatureController.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor rellena nombre, DNI y firma.')));
+    if (_nameCtrl.text.isEmpty || _dniCtrl.text.isEmpty || _signatureController.isEmpty || _rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor rellena nombre, DNI, firma y valoración.')));
       return;
     }
 
@@ -183,6 +184,10 @@ class _SignatureScreenState extends State<SignatureScreen> {
                         pw.SizedBox(height: 8),
                         pw.Text('Coordenadas GPS:', style: pw.TextStyle(color: colorGrey, fontSize: 10)),
                         pw.Text('${position.latitude}, ${position.longitude}', style: pw.TextStyle(fontSize: 11)),
+                        pw.SizedBox(height: 16),
+                        pw.Text('VALORACIÓN DEL CLIENTE', style: pw.TextStyle(color: colorPrimary, fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.SizedBox(height: 8),
+                        pw.Text('Puntuación: $_rating / 5', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -245,6 +250,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
       await supabase.from('projects').update({
         'measurement_phase': 'medicion_realizada',
         'measurement_completed_date': DateTime.now().toIso8601String(),
+        'client_rating': _rating,
       }).eq('id', projectId);
 
       if (mounted) {
@@ -309,6 +315,24 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 controller: _dniCtrl,
                 decoration: const InputDecoration(labelText: 'DNI / NIE', border: OutlineInputBorder()),
               ),
+              const SizedBox(height: 32),
+              const Text('Valora nuestro servicio:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  return IconButton(
+                    iconSize: 40,
+                    icon: Icon(
+                      index < _rating ? Icons.star : Icons.star_border,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    onPressed: () => setState(() => _rating = index + 1),
+                  );
+                }),
+              ),
+              if (_rating == 0)
+                const Center(child: Text('Selecciona al menos una estrella para continuar', style: TextStyle(color: Colors.red, fontSize: 12))),
               const SizedBox(height: 32),
               const Text('Firma en el recuadro:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 12),
