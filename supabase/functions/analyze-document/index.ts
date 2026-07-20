@@ -13,54 +13,48 @@ serve(async (req) => {
 
   try {
     const { imageBase64, mimeType } = await req.json()
-    const openAiApiKey = Deno.env.get('OPENAI_API_KEY')
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
 
-    if (!openAiApiKey) {
-      throw new Error('OPENAI_API_KEY no está configurado en los secretos de Supabase.')
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY no está configurado en los secretos de Supabase.')
     }
     if (!imageBase64) {
       throw new Error('No se ha proporcionado ninguna imagen.')
     }
 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`
+
     const payload = {
-      model: "gpt-4o",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: "Eres un asistente experto en analizar documentos legales, DNIs, pasaportes y certificados laborales. Extrae la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date) de los documentos que se te envían en las imágenes. Si no tiene una de estas fechas, omite el campo o devuélvelo como null. Devuelve un objeto JSON con el siguiente formato estricto: {\"issue_date\": \"YYYY-MM-DD\", \"expiry_date\": \"YYYY-MM-DD\"}. Si el documento es ilegible o no es válido, devuelve {\"error\": \"Documento inválido o fechas ilegibles\"}."
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Por favor extrae las fechas de este documento." },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
-              }
+      contents: [{
+        parts: [
+          { text: "Eres un asistente experto en analizar documentos legales, DNIs, pasaportes y certificados laborales. Extrae la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date) de los documentos que se te envían en las imágenes. Devuelve un objeto JSON con el siguiente formato estricto: {\"issue_date\": \"YYYY-MM-DD\", \"expiry_date\": \"YYYY-MM-DD\"}. Si el documento no tiene caducidad o emisión, devuelve null para ese campo. Si es ilegible, devuelve {\"error\": \"Ilegible\"}." },
+          {
+            inlineData: {
+              mimeType: mimeType || 'image/jpeg',
+              data: imageBase64
             }
-          ]
-        }
-      ],
-      max_tokens: 300,
+          }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAiApiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
 
     const result = await response.json();
     if (result.error) {
-       throw new Error(result.error.message || 'Error en la API de OpenAI');
+       throw new Error(result.error.message || 'Error en la API de Gemini');
     }
 
-    const content = result.choices[0].message.content;
+    const content = result.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(content);
 
     return new Response(JSON.stringify(parsedData), {
