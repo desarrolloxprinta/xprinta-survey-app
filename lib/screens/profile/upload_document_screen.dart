@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -38,6 +39,7 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
   
   List<File> _selectedFiles = [];
   bool _isUploading = false;
+  bool _isAnalyzing = false;
 
   @override
   void initState() {
@@ -62,9 +64,54 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
     );
 
     if (result != null) {
+      final newFiles = result.paths.where((p) => p != null).map((p) => File(p!)).toList();
       setState(() {
-        _selectedFiles.addAll(result.paths.where((p) => p != null).map((p) => File(p!)));
+        _selectedFiles.addAll(newFiles);
       });
+      
+      // Auto-analyze first selected file if it's an image
+      if (newFiles.isNotEmpty && _issueDate == null && _expiryDate == null) {
+        _analyzeDocumentWithAI(newFiles.first);
+      }
+    }
+  }
+
+  Future<void> _analyzeDocumentWithAI(File file) async {
+    final ext = file.path.split('.').last.toLowerCase();
+    if (!['jpg', 'jpeg', 'png', 'webp'].contains(ext)) return;
+
+    setState(() => _isAnalyzing = true);
+    try {
+      final bytes = await file.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      
+      String mimeType = 'image/jpeg';
+      if (ext == 'png') mimeType = 'image/png';
+      if (ext == 'webp') mimeType = 'image/webp';
+
+      final response = await supabase.functions.invoke('analyze-document', body: {
+        'imageBase64': base64Image,
+        'mimeType': mimeType,
+      });
+
+      if (response.data != null) {
+        final data = response.data;
+        if (data['error'] != null) {
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('IA: ${data['error']}')));
+        } else {
+           if (mounted) {
+             setState(() {
+               if (data['issue_date'] != null) _issueDate = DateTime.tryParse(data['issue_date']);
+               if (data['expiry_date'] != null) _expiryDate = DateTime.tryParse(data['expiry_date']);
+             });
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fechas autocompletadas por IA ✨'), backgroundColor: Colors.green));
+           }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error en IA: $e');
+    } finally {
+      if (mounted) setState(() => _isAnalyzing = false);
     }
   }
 
@@ -277,6 +324,17 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                                 label: const Text('Seleccionar Archivos'),
                               ),
                             ),
+                            if (_isAnalyzing)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 16.0),
+                                child: Row(
+                                  children: [
+                                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                    SizedBox(width: 12),
+                                    Text('Analizando documento con IA...', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
                             if (_selectedFiles.isNotEmpty) ...[
                               const SizedBox(height: 16),
                               ..._selectedFiles.map((f) => ListTile(
