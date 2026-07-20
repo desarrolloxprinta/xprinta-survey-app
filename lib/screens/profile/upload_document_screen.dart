@@ -7,17 +7,18 @@ import '../../main.dart';
 import '../../providers/user_documents_provider.dart';
 import '../../widgets/modern_card.dart';
 
-const List<String> documentTypes = [
-  'DNI',
-  'Pasaporte',
-  'Permiso de conducir',
-  'Permiso de trabajo',
-  'Certificado de salud',
-  'Formación en seguridad',
-  'Permiso de trabajo en altura',
-  'Permiso eléctrico',
-  'Otros'
-];
+const Map<String, String> documentTypeMap = {
+  'DNI': 'dni',
+  'Pasaporte': 'passport',
+  'Permiso de conducir': 'driving_license',
+  'Permiso de trabajo': 'work_permit',
+  'Certificado de salud': 'health_certificate',
+  'Formación en seguridad': 'safety_training',
+  'Permiso de trabajo en altura': 'height_work_permit',
+  'Permiso eléctrico': 'electrical_permit',
+  'Otros': 'otros',
+};
+final List<String> documentTypes = documentTypeMap.keys.toList();
 
 class UploadDocumentScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingDoc;
@@ -46,8 +47,9 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
     super.initState();
     if (widget.existingDoc != null) {
       final doc = widget.existingDoc!;
-      if (documentTypes.contains(doc['document_type'])) {
-        _selectedType = doc['document_type'];
+      if (doc['document_type'] != null) {
+        final key = documentTypeMap.entries.firstWhere((e) => e.value == doc['document_type'], orElse: () => const MapEntry('Otros', 'otros')).key;
+        _selectedType = key;
       }
       _titleCtrl.text = doc['title'] ?? '';
       _notesCtrl.text = doc['notes'] ?? '';
@@ -154,7 +156,7 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
       finalFiles.addAll(uploadedFilesMeta);
 
       final data = {
-        'document_type': _selectedType,
+        'document_type': documentTypeMap[_selectedType],
         'title': _titleCtrl.text,
         'issue_date': _issueDate?.toIso8601String(),
         'expiry_date': _expiryDate?.toIso8601String(),
@@ -278,9 +280,9 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                                       SizedBox(
                                         width: double.infinity,
                                         child: OutlinedButton.icon(
-                                          onPressed: () => _selectDate(context, true),
-                                          icon: const Icon(Icons.calendar_today, size: 16),
-                                          label: Text(_expiryDate != null ? "${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}" : 'Seleccionar'),
+                                          onPressed: null, // Bloqueado, solo IA puede rellenarlo
+                                          icon: const Icon(Icons.lock, size: 16),
+                                          label: Text(_expiryDate != null ? "${_expiryDate!.day}/${_expiryDate!.month}/${_expiryDate!.year}" : 'Automático por IA'),
                                         ),
                                       ),
                                     ],
