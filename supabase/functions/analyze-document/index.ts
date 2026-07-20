@@ -34,7 +34,8 @@ REGLAS ESPECÍFICAS DE BÚSQUEDA:
 3. Cursos PRL, Trabajos en Altura, Riesgo Eléctrico: Busca "Fecha de caducidad", "Válido hasta", "Próximo reciclaje", o suma los años de validez indicados a la fecha del curso.
 4. Carnet de Conducir: Fecha de expedición (4a) y fecha de caducidad (4b).
 
-SIEMPRE extrae las fechas y devuélvelas estrictamente en formato YYYY-MM-DD. Si no existe, devuelve null.`;
+SIEMPRE extrae las fechas y devuélvelas estrictamente en formato YYYY-MM-DD. Si no existe, devuelve null.
+IMPORTANTE: Completa siempre el campo "reasoning" explicando paso a paso qué textos y números ves en la imagen relacionados con fechas, y por qué decides asignar o no las fechas de caducidad y emisión.`;
 
     const payload = {
       contents: [{
@@ -54,8 +55,10 @@ SIEMPRE extrae las fechas y devuélvelas estrictamente en formato YYYY-MM-DD. Si
           type: "OBJECT",
           properties: {
             issue_date: { type: "STRING", description: "Fecha de emisión en formato YYYY-MM-DD. Null si no existe.", nullable: true },
-            expiry_date: { type: "STRING", description: "Fecha de caducidad en formato YYYY-MM-DD. Null si no existe.", nullable: true }
-          }
+            expiry_date: { type: "STRING", description: "Fecha de caducidad en formato YYYY-MM-DD. Null si no existe.", nullable: true },
+            reasoning: { type: "STRING", description: "Tu razonamiento paso a paso sobre qué fechas ves y por qué." }
+          },
+          required: ["reasoning"]
         }
       }
     }

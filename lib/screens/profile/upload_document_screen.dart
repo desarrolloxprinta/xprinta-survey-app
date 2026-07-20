@@ -107,7 +107,19 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                if (data['issue_date'] != null) _issueDate = DateTime.tryParse(data['issue_date']);
                if (data['expiry_date'] != null) _expiryDate = DateTime.tryParse(data['expiry_date']);
              });
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fechas autocompletadas por IA ✨'), backgroundColor: Colors.green));
+             
+             if (_issueDate == null && _expiryDate == null) {
+               showDialog(
+                 context: context, 
+                 builder: (ctx) => AlertDialog(
+                   title: const Text('Análisis IA Fallido'),
+                   content: SingleChildScrollView(child: Text(data['reasoning'] ?? 'La IA no encontró fechas en esta imagen.')),
+                   actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Entendido'))]
+                 )
+               );
+             } else {
+               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fechas autocompletadas por IA ✨'), backgroundColor: Colors.green));
+             }
            }
         }
       }
