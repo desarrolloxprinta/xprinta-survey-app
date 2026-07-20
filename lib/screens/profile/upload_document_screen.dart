@@ -118,7 +118,15 @@ class _UploadDocumentScreenState extends ConsumerState<UploadDocumentScreen> {
                  )
                );
              } else {
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fechas autocompletadas por IA ✨'), backgroundColor: Colors.green));
+               String msg = 'Fechas autocompletadas por IA ✨';
+               if (data['autoCalculated'] == true && data['calculationReason'] != null) {
+                 msg = 'Caducidad autocalculada: ${data['calculationReason']} ✨';
+               }
+               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                 content: Text(msg), 
+                 backgroundColor: Colors.green,
+                 duration: const Duration(seconds: 4),
+               ));
              }
            }
         }
