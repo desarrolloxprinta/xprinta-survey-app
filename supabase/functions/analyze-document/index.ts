@@ -29,14 +29,12 @@ El usuario ha indicado que este documento es del tipo: '${documentType || 'Desco
 Tu objetivo es extraer la fecha de emisión (issue_date) y la fecha de caducidad (expiry_date).
 
 REGLAS ESPECÍFICAS DE BÚSQUEDA:
-1. DNIs y Pasaportes: La caducidad suele estar bajo 'VALIDEZ' y la emisión bajo 'FECHA DE EMISIÓN', frecuentemente en formato 'DD MM AA' (ej. '01 01 32' -> 2032-01-01).
+1. DNIs y Pasaportes: La caducidad suele estar en el ANVERSO bajo 'VALIDEZ' y la emisión bajo 'FECHA DE EMISIÓN'. El formato corto 'DD MM AA' (ej. '01 01 32') significa siempre el siglo XXI (2032-01-01).
 2. Certificados de Seguridad Social o Hacienda (Corriente de pago): Suelen ser válidos por 6 meses. Busca frases como "validez de X meses" desde la fecha de expedición, o "Válido hasta".
 3. Cursos PRL, Trabajos en Altura, Riesgo Eléctrico: Busca "Fecha de caducidad", "Válido hasta", "Próximo reciclaje", o suma los años de validez indicados a la fecha del curso.
 4. Carnet de Conducir: Fecha de expedición (4a) y fecha de caducidad (4b).
 
-Convierte SIEMPRE cualquier fecha encontrada al formato estricto: {"issue_date": "YYYY-MM-DD", "expiry_date": "YYYY-MM-DD"}.
-Si el documento definitivamente no tiene caducidad, devuelve null para expiry_date. Si no tiene emisión, null para issue_date.
-Analiza meticulosamente toda la imagen.`;
+SIEMPRE extrae las fechas y devuélvelas estrictamente en formato YYYY-MM-DD. Si no existe, devuelve null.`;
 
     const payload = {
       contents: [{
@@ -51,7 +49,14 @@ Analiza meticulosamente toda la imagen.`;
         ]
       }],
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            issue_date: { type: "STRING", description: "Fecha de emisión en formato YYYY-MM-DD. Null si no existe.", nullable: true },
+            expiry_date: { type: "STRING", description: "Fecha de caducidad en formato YYYY-MM-DD. Null si no existe.", nullable: true }
+          }
+        }
       }
     }
 
