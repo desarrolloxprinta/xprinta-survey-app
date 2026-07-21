@@ -29,10 +29,16 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
     final textTheme = Theme.of(context).textTheme;
     final projectsAsync = ref.watch(projectsProvider);
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 120),
-      children: [
-        Text(
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(projectsProvider);
+        // Esperar a que el provider se resuelva de nuevo
+        await ref.read(projectsProvider.future);
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 60, 24, 120),
+        children: [
+          Text(
           'Proyectos Asignados',
           style: textTheme.titleLarge?.copyWith(fontSize: 28),
         ),
@@ -64,6 +70,7 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
         const SizedBox(height: 24),
         
         projectsAsync.when(
+          skipLoadingOnRefresh: false,
           data: (allProjects) {
             final projects = allProjects.where((p) {
               final nombre = (p['nombre'] ?? '').toLowerCase();
