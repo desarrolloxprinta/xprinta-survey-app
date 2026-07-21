@@ -117,6 +117,7 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
           ),
         ),
       ],
+    ),
     );
   }
 
