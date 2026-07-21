@@ -5,11 +5,10 @@ import '../../widgets/modern_card.dart';
 import '../../core/notification_service.dart';
 import '../measurement_detail_screen.dart';
 
-// Proveedor para obtener los proyectos asignados de la BD real
 final projectsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final response = await supabase
       .from('projects')
-      .select('id, nombre, direccion, measurement_phase, measurement_assigned_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, form_data, form_template_id, companies(nombre)')
+      .select('id, nombre, direccion, measurement_phase, measurement_assigned_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, form_data, form_template_id, companies(nombre), mediciones(id, nombre)')
       .order('measurement_assigned_date', ascending: false)
       .limit(100);
   return List<Map<String, dynamic>>.from(response);
@@ -248,6 +247,19 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
       );
     }
 
+    // Extraer mediciones realizadas
+    int measurementsCount = 0;
+    List<String> measuredNames = [];
+    if (p['mediciones'] != null && p['mediciones'] is List) {
+      final mList = p['mediciones'] as List;
+      measurementsCount = mList.length;
+      for (var m in mList) {
+        if (m is Map && m['nombre'] != null && m['nombre'].toString().isNotEmpty) {
+          measuredNames.add(m['nombre'].toString());
+        }
+      }
+    }
+
     return _buildProjectCard(
       context,
       id: p['id'].toString(),
@@ -258,6 +270,8 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
       scheduledDate: scheduledDateStr,
       status: statusLabel,
       statusColor: statusColor,
+      measurementsCount: measurementsCount,
+      measuredNames: measuredNames,
       onTap: () async {
         final result = await Navigator.push(
           context,
@@ -281,6 +295,8 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
     String? scheduledDate,
     required String status,
     required Color statusColor,
+    required int measurementsCount,
+    required List<String> measuredNames,
     required VoidCallback onTap,
   }) {
     final textTheme = Theme.of(context).textTheme;
@@ -393,6 +409,39 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
               ),
             ],
           ),
+          
+          if (measurementsCount > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Colors.blue, size: 16),
+                      const SizedBox(width: 8),
+                      Text('$measurementsCount mediciones realizadas', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue)),
+                    ],
+                  ),
+                  if (measuredNames.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      measuredNames.join(', '),
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.grey[400] : Colors.grey[700]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           
           if (scheduledDate != null) ...[
             const SizedBox(height: 8),
