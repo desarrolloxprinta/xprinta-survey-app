@@ -122,7 +122,7 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
         Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 20)),
         const SizedBox(height: 16),
         SizedBox(
-          height: 320, // Aumentado para evitar overflow con el aviso de fecha agendada
+          height: 380, // Aumentado para evitar overflow con la nueva caja de mediciones
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
@@ -178,7 +178,7 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
           ),
         ),
         SizedBox(
-          height: 320, // Aumentado en concordancia con el listView principal
+          height: 380, // Aumentado en concordancia con el listView principal
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             physics: const NeverScrollableScrollPhysics(),
