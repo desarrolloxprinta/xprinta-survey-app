@@ -97,6 +97,28 @@ class MeasurementDetailScreen extends ConsumerWidget {
     }
   }
 
+  String _formatSlug(String slug) {
+    if (slug.isEmpty) return slug;
+    final Map<String, String> dict = {
+      'rotulo_sin_luz': 'Rótulo sin luz',
+      'rotulo_luminoso': 'Rótulo luminoso',
+      'vinilo': 'Vinilo',
+      'letras_corporeas': 'Letras corpóreas',
+      'banderola': 'Banderola',
+      'impresion_digital': 'Impresión digital',
+      'lonas': 'Lonas',
+      'placa_metacrilato': 'Placa metacrilato',
+      'senyaletica': 'Señalética',
+      'escaparate': 'Escaparate'
+    };
+    if (dict.containsKey(slug)) return dict[slug]!;
+    
+    final words = slug.replaceAll('_', ' ').split(' ');
+    if (words.isEmpty) return slug;
+    words[0] = words[0].substring(0, 1).toUpperCase() + words[0].substring(1);
+    return words.join(' ');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
@@ -281,7 +303,7 @@ class MeasurementDetailScreen extends ConsumerWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: elementos.map((e) => Chip(
-                      label: Text(e),
+                      label: Text(_formatSlug(e)),
                       backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                       side: BorderSide.none,
                     )).toList(),

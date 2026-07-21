@@ -5,6 +5,7 @@ import 'core/constants.dart';
 import 'core/app_theme.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/notification_service.dart';
 
@@ -62,6 +63,14 @@ class XprintaSurveyApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'),
+      ],
       home: const AuthWrapper(),
     );
   }
