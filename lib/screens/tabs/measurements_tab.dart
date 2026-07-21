@@ -128,33 +128,34 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
       children: [
         Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 20)),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 380, // Aumentado para evitar overflow con la nueva caja de mediciones
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            clipBehavior: Clip.none,
-            itemCount: projects.length,
-            itemBuilder: (context, index) {
-              return TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: Duration(milliseconds: 400 + (index * 150).clamp(0, 900)),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return Transform.translate(
-                    offset: Offset(50 * (1 - value), 0),
-                    child: Opacity(
-                      opacity: value,
-                      child: child,
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 300,
-                  margin: const EdgeInsets.only(right: 16),
-                  child: _buildProjectCardFor(context, projects[index], ref),
-                ),
-              );
-            },
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(projects.length, (index) {
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: Duration(milliseconds: 400 + (index * 150).clamp(0, 900)),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(50 * (1 - value), 0),
+                      child: Opacity(
+                        opacity: value,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 300,
+                    margin: const EdgeInsets.only(right: 16),
+                    child: _buildProjectCardFor(context, projects[index], ref),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
         const SizedBox(height: 32),
@@ -184,18 +185,20 @@ class _MeasurementsTabState extends ConsumerState<MeasurementsTab> {
             decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
           ),
         ),
-        SizedBox(
-          height: 380, // Aumentado en concordancia con el listView principal
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3,
-            itemBuilder: (ctx, idx) => ShimmerLoading(
-              child: Container(
-                width: 300,
-                margin: const EdgeInsets.only(right: 16),
-                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), borderRadius: BorderRadius.circular(24)),
-              ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: List.generate(3, (idx) => ShimmerLoading(
+                child: Container(
+                  width: 300,
+                  height: 320, // Altura base para el shimmer
+                  margin: const EdgeInsets.only(right: 16, bottom: 24),
+                  decoration: BoxDecoration(color: Colors.grey.withOpacity(0.2), borderRadius: BorderRadius.circular(24)),
+                ),
+              )),
             ),
           ),
         ),
