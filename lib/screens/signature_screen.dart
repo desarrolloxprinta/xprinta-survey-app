@@ -25,7 +25,9 @@ class _SignatureScreenState extends State<SignatureScreen> {
     exportBackgroundColor: Colors.white,
   );
   bool _isGenerating = false;
-  int _rating = 0;
+  int _ratingPuntualidad = 0;
+  int _ratingCalidad = 0;
+  int _ratingLimpieza = 0;
 
   @override
   void dispose() {
@@ -36,8 +38,8 @@ class _SignatureScreenState extends State<SignatureScreen> {
   }
 
   Future<void> _generateAndUploadPdf() async {
-    if (_nameCtrl.text.isEmpty || _dniCtrl.text.isEmpty || _signatureController.isEmpty || _rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor rellena nombre, DNI, firma y valoración.')));
+    if (_nameCtrl.text.isEmpty || _dniCtrl.text.isEmpty || _signatureController.isEmpty || _ratingPuntualidad == 0 || _ratingCalidad == 0 || _ratingLimpieza == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor rellena nombre, DNI, firma y todas las valoraciones.')));
       return;
     }
 
@@ -187,7 +189,28 @@ class _SignatureScreenState extends State<SignatureScreen> {
                         pw.SizedBox(height: 16),
                         pw.Text('VALORACIÓN DEL CLIENTE', style: pw.TextStyle(color: colorPrimary, fontWeight: pw.FontWeight.bold, fontSize: 12)),
                         pw.SizedBox(height: 8),
-                        pw.Text('Puntuación: $_rating / 5', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                        pw.Container(
+                          padding: const pw.EdgeInsets.all(8),
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: colorGrey, width: 0.5),
+                          ),
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text('Puntualidad: $_ratingPuntualidad / 5', style: const pw.TextStyle(fontSize: 10)),
+                              pw.Text('Calidad de atención: $_ratingCalidad / 5', style: const pw.TextStyle(fontSize: 10)),
+                              pw.Text('Limpieza: $_ratingLimpieza / 5', style: const pw.TextStyle(fontSize: 10)),
+                            ],
+                          ),
+                        ),
+                        pw.SizedBox(height: 16),
+                        pw.Text('DECLARACIÓN DE CONFORMIDAD Y VALIDEZ LEGAL', style: pw.TextStyle(color: colorPrimary, fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          'De conformidad con el Reglamento (UE) nº 910/2014 (eIDAS) y la Ley 6/2020 reguladora de determinados aspectos de los servicios electrónicos de confianza, la presente firma electrónica recoge el consentimiento expreso del cliente, vinculando su identidad, sello de tiempo y coordenadas GPS a la conformidad de los trabajos de medición descritos en este documento.',
+                          style: const pw.TextStyle(fontSize: 9),
+                          textAlign: pw.TextAlign.justify,
+                        ),
                       ],
                     ),
                   ),
@@ -250,7 +273,10 @@ class _SignatureScreenState extends State<SignatureScreen> {
       await supabase.from('projects').update({
         'measurement_phase': 'medicion_realizada',
         'measurement_completed_date': DateTime.now().toIso8601String(),
-        'client_rating': _rating,
+        'client_rating': _ratingCalidad, // Retained for fallback
+        'rating_puntualidad': _ratingPuntualidad,
+        'rating_calidad': _ratingCalidad,
+        'rating_limpieza': _ratingLimpieza,
       }).eq('id', projectId);
 
       if (mounted) {
@@ -264,6 +290,33 @@ class _SignatureScreenState extends State<SignatureScreen> {
     } finally {
       if (mounted) setState(() => _isGenerating = false);
     }
+  }
+
+  Widget _buildRatingRow(String label, int currentRating, Function(int) onUpdate) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 14)),
+          Row(
+            children: List.generate(5, (index) {
+              return InkWell(
+                onTap: () => onUpdate(index + 1),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    index < currentRating ? Icons.star : Icons.star_border,
+                    color: Theme.of(context).primaryColor,
+                    size: 28,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -316,23 +369,27 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 decoration: const InputDecoration(labelText: 'DNI / NIE', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 32),
-              const Text('Valora nuestro servicio:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text('Valoración del Servicio:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    iconSize: 40,
-                    icon: Icon(
-                      index < _rating ? Icons.star : Icons.star_border,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    onPressed: () => setState(() => _rating = index + 1),
-                  );
-                }),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildRatingRow('Puntualidad', _ratingPuntualidad, (val) => setState(() => _ratingPuntualidad = val)),
+                    _buildRatingRow('Calidad de atención', _ratingCalidad, (val) => setState(() => _ratingCalidad = val)),
+                    _buildRatingRow('Limpieza', _ratingLimpieza, (val) => setState(() => _ratingLimpieza = val)),
+                  ],
+                ),
               ),
-              if (_rating == 0)
-                const Center(child: Text('Selecciona al menos una estrella para continuar', style: TextStyle(color: Colors.red, fontSize: 12))),
+              if (_ratingPuntualidad == 0 || _ratingCalidad == 0 || _ratingLimpieza == 0)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8.0),
+                  child: Center(child: Text('Selecciona al menos una estrella en cada aspecto', style: TextStyle(color: Colors.red, fontSize: 12))),
+                ),
               const SizedBox(height: 32),
               const Text('Firma en el recuadro:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 12),
