@@ -400,7 +400,7 @@ class MeasurementDetailScreen extends ConsumerWidget {
                       });
                     },
                     icon: const Icon(Icons.draw),
-                    label: const Text('Finalizar y Firmar Albarán'),
+                    label: const Text('Finalizar y Firmar Comprobante'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       minimumSize: const Size(double.infinity, 54),

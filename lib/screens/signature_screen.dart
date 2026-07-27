@@ -96,7 +96,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                 children: [
                   pw.Image(logoImage, height: 40),
                   pw.Text(
-                    'ALBARÁN DE MEDICIÓN',
+                    'COMPROBANTE DE MEDICIÓN',
                     style: pw.TextStyle(
                       font: fontHeading,
                       fontSize: 20,
@@ -261,7 +261,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
       await supabase.from('files').insert({
         'project_id': projectId,
         'category': 'albaran_medicion',
-        'filename': 'Albarán de Medición',
+        'filename': 'Comprobante de Medición',
         'storage_path': path,
         'bucket': 'project-files',
         'size_bytes': bytes.length,
@@ -280,7 +280,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
       }).eq('id', projectId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Albarán generado y guardado.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Comprobante generado y guardado.', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
@@ -322,7 +322,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Firma de Albarán'), elevation: 0),
+      appBar: AppBar(title: const Text('Firma del Comprobante'), elevation: 0),
       body: _isGenerating 
         ? const Center(child: CircularProgressIndicator())
         : ListView(
@@ -424,7 +424,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text('Generar Albarán y Finalizar', style: TextStyle(fontSize: 18)),
+                child: const Text('Generar Comprobante y Finalizar', style: TextStyle(fontSize: 18)),
               ),
             ],
           ),
