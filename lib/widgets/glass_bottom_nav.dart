@@ -17,7 +17,7 @@ class GlassBottomNav extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
-      margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+      margin: const EdgeInsets.only(left: 12, right: 12, bottom: 20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
@@ -35,7 +35,7 @@ class GlassBottomNav extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
             height: 70,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
               borderRadius: BorderRadius.circular(32),
@@ -48,28 +48,34 @@ class GlassBottomNav extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavBarItem(
-                  icon: Icons.dashboard_rounded,
-                  label: 'Dashboard',
+                  icon: Icons.straighten_rounded,
+                  label: 'Medición',
                   isSelected: currentIndex == 0,
                   onTap: () => onTap(0),
                 ),
                 _NavBarItem(
-                  svgIcon: 'assets/icons/mediciones.svg',
-                  label: 'Mediciones',
+                  icon: Icons.build_rounded,
+                  label: 'Instalación',
                   isSelected: currentIndex == 1,
                   onTap: () => onTap(1),
                 ),
                 _NavBarItem(
-                  icon: Icons.person_rounded,
-                  label: 'Perfil',
+                  icon: Icons.history_rounded,
+                  label: 'Historial',
                   isSelected: currentIndex == 2,
                   onTap: () => onTap(2),
                 ),
                 _NavBarItem(
-                  icon: Icons.support_agent_rounded,
-                  label: 'Xprinta',
+                  icon: Icons.person_rounded,
+                  label: 'Perfil',
                   isSelected: currentIndex == 3,
                   onTap: () => onTap(3),
+                ),
+                _NavBarItem(
+                  icon: Icons.support_agent_rounded,
+                  label: 'Soporte',
+                  isSelected: currentIndex == 4,
+                  onTap: () => onTap(4),
                 ),
               ],
             ),
@@ -110,8 +116,8 @@ class _NavBarItem extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutBack, // "Blob" / Spring fluid feel
         padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 20 : 12,
-          vertical: 12,
+          horizontal: isSelected ? 14 : 8,
+          vertical: 10,
         ),
         decoration: BoxDecoration(
           color: isSelected ? Theme.of(context).primaryColor.withOpacity(isDark ? 0.8 : 1.0) : Colors.transparent,

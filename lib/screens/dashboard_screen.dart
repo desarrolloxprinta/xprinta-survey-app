@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/glass_bottom_nav.dart';
 import 'tabs/measurements_tab.dart';
+import 'tabs/installations_tab.dart';
 import 'tabs/history_tab.dart';
 import 'tabs/profile_tab.dart';
 import 'tabs/support_tab.dart';
@@ -17,6 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   
   final List<Widget> _tabs = const [
     MeasurementsTab(),
+    InstallationsTab(),
     HistoryTab(),
     ProfileTab(),
     SupportTab(),
