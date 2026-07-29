@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'installation_form_screen.dart';
 import 'installation_signature_screen.dart';
+import 'tabs/installations_tab.dart';
 import '../main.dart'; // supabase
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';

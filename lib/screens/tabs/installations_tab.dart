@@ -486,3 +486,35 @@ class _InstallationsTabState extends ConsumerState<InstallationsTab> {
     );
   }
 }
+
+class ShimmerLoading extends StatefulWidget {
+  final Widget child;
+  const ShimmerLoading({super.key, required this.child});
+
+  @override
+  State<ShimmerLoading> createState() => _ShimmerLoadingState();
+}
+
+class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 0.8).animate(_controller);
+  }
+  
+  @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) => Opacity(opacity: _animation.value, child: child),
+      child: widget.child,
+    );
+  }
+}
