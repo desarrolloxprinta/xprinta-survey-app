@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'installation_form_screen.dart';
 import 'installation_signature_screen.dart';
 import 'tabs/installations_tab.dart';
+import 'installation_info_block.dart';
 import '../main.dart'; // supabase
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
@@ -67,75 +68,8 @@ class InstallationDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScreen> {
-  final GlobalKey _imageKey = GlobalKey();
-  String? _selectedBlueprintUrl;
-  Map<String, dynamic>? _selectedPinData;
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.projectData['planos_tecnicos'] != null && widget.projectData['planos_tecnicos'] is List) {
-      List planos = widget.projectData['planos_tecnicos'];
-      for (var plano in planos) {
-        if (plano is Map && plano['blueprint_url'] != null && plano['blueprint_url'].toString().trim().isNotEmpty) {
-          _selectedBlueprintUrl = plano['blueprint_url'].toString();
-          break;
-        }
-      }
-    }
-  }
 
-  Future<void> _scheduleInstallationVisit(BuildContext context, WidgetRef ref) async {
-    final DateTime? date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (date == null) return;
-    if (!context.mounted) return;
-
-    final TimeOfDay? time = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
-    );
-    if (time == null) return;
-    if (!context.mounted) return;
-
-    final DateTime scheduledDateTime = DateTime(
-      date.year, date.month, date.day, time.hour, time.minute,
-    );
-
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (c) => const Center(child: CircularProgressIndicator()),
-      );
-
-      await supabase.from('projects').update({
-        'installation_phase': 'visita_agendada_instalacion',
-        'scheduled_installation_date': scheduledDateTime.toIso8601String(),
-      }).eq('id', widget.projectData['id']);
-
-      if (context.mounted) {
-        Navigator.pop(context); // close dialog
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Visita de instalación agendada correctamente', style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.green,
-        ));
-        Navigator.pop(context, true); // Pop screen to refresh
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // close dialog
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error al agendar: $e', style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
-        ));
-      }
-    }
-  }
 
   String _formatSlug(String slug) {
     if (slug.isEmpty) return slug;
@@ -157,43 +91,6 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
     if (words.isEmpty) return slug;
     words[0] = words[0].substring(0, 1).toUpperCase() + words[0].substring(1);
     return words.join(' ');
-  }
-
-  void _showPinDetailDialog(BuildContext context, String nombre, Map<String, dynamic> data) {
-    final textTheme = Theme.of(context).textTheme;
-    final ubicacion = data['ubicacion'] ?? 'No especificada';
-    final observaciones = data['observaciones'] ?? 'Sin observaciones';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.location_on, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(child: Text(nombre, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Ubicación: $ubicacion', style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Text('Observaciones:', style: textTheme.bodySmall?.copyWith(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text(observaciones, style: textTheme.bodyMedium),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -289,6 +186,12 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
                 
                 const SizedBox(height: 24),
                 
+                InstallationInfoBlock(
+                  projectData: widget.projectData,
+                  currentUserId: supabase.auth.currentUser?.id ?? '',
+                ),
+
+                
                 // 1. Ficheros del Administrador / Técnico
                 filesAsync.when(
                   data: (files) {
@@ -303,10 +206,10 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
                             return Card(
                               elevation: 0,
                               margin: const EdgeInsets.only(bottom: 8),
-                              color: Colors.purple.withOpacity(0.05),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.purple.withOpacity(0.2))),
+                              color: Theme.of(context).primaryColor.withOpacity(0.05),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.2))),
                               child: ListTile(
-                                leading: const Icon(Icons.folder_zip_outlined, color: Colors.purple),
+                                leading: Icon(Icons.folder_zip_outlined, color: Theme.of(context).primaryColor),
                                 title: Text(f['filename'] ?? 'Documento', style: const TextStyle(fontWeight: FontWeight.w500)),
                                 trailing: const Icon(Icons.download),
                                 onTap: () async {
@@ -349,146 +252,6 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
                   loading: () => const Padding(padding: EdgeInsets.only(bottom: 24), child: Center(child: CircularProgressIndicator())),
                   error: (e, st) => const SizedBox.shrink(),
                 ),
-
-                // 2. Plano Técnico con Marcadores/Pins Precargados de Mediciones
-                measurementsAsync.when(
-                  data: (mediciones) {
-                    // Extraer los pins precargados
-                    List<Map<String, dynamic>> pins = [];
-                    for (var m in mediciones) {
-                      final data = m['measurement_data'];
-                      if (data is Map && data['pin_ubicacion'] != null && data['pin_ubicacion'] is Map) {
-                        final pin = Map<String, dynamic>.from(data['pin_ubicacion']);
-                        pins.add({
-                          'nombre': m['nombre'] ?? 'Elemento medido',
-                          'x': pin['x'],
-                          'y': pin['y'],
-                          'blueprint_url': pin['blueprint_url'],
-                          'data': data,
-                        });
-                      }
-                    }
-
-                    if (availableBlueprints.isEmpty && _selectedBlueprintUrl == null) {
-                      return const SizedBox.shrink();
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Planos y Ubicación de Elementos', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            if (pins.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                                child: Text('${pins.length} puntos precargados', style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold)),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        if (availableBlueprints.length > 1) ...[
-                          DropdownButtonFormField<String>(
-                            value: _selectedBlueprintUrl,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: 'Seleccionar plano',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            items: availableBlueprints.map((plano) {
-                              final url = plano['blueprint_url'] as String;
-                              final name = plano['name'] ?? plano['file_name'] ?? 'Plano ${availableBlueprints.indexOf(plano) + 1}';
-                              return DropdownMenuItem<String>(
-                                value: url,
-                                child: Text(name, overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedBlueprintUrl = val);
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-
-                        Text('Toca sobre un marcador para ver la información precargada por el medidor', style: textTheme.bodySmall?.copyWith(color: Colors.grey)),
-                        const SizedBox(height: 12),
-
-                        if (_selectedBlueprintUrl != null)
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.purple.withOpacity(0.4), width: 2),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            clipBehavior: Clip.hardEdge,
-                            child: InteractiveViewer(
-                              minScale: 0.5,
-                              maxScale: 4.0,
-                              child: Stack(
-                                children: [
-                                  Image.network(
-                                    _selectedBlueprintUrl!,
-                                    key: _imageKey,
-                                    fit: BoxFit.contain,
-                                    width: double.infinity,
-                                    loadingBuilder: (ctx, child, progress) {
-                                      if (progress == null) return child;
-                                      return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
-                                    },
-                                    errorBuilder: (ctx, err, stack) => const SizedBox(height: 200, child: Center(child: Text('Error cargando plano'))),
-                                  ),
-                                  // Renderizar marcadores/pins precargados sobre el plano
-                                  ...pins.where((p) => p['blueprint_url'] == _selectedBlueprintUrl || pins.length == 1).map((p) {
-                                    final double xRel = (p['x'] as num).toDouble();
-                                    final double yRel = (p['y'] as num).toDouble();
-                                    
-                                    return Positioned(
-                                      left: xRel * 300 - 14, // Posición aproximada para la escala inicial
-                                      top: yRel * 200 - 28,
-                                      child: GestureDetector(
-                                        onTap: () => _showPinDetailDialog(context, p['nombre'], p['data']),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                                          ),
-                                          child: const Icon(Icons.location_on, color: Colors.red, size: 28),
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  },
-                  loading: () => const SizedBox.shrink(),
-                  error: (e, st) => const SizedBox.shrink(),
-                ),
-
-                // 3. Productos / Elementos a Instalar
-                if (elementos.isNotEmpty) ...[
-                  Text('Elementos a Instalar', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: elementos.map((e) => Chip(
-                      avatar: const Icon(Icons.build, size: 16, color: Colors.purple),
-                      label: Text(_formatSlug(e)),
-                      backgroundColor: Colors.purple.withOpacity(0.1),
-                      side: BorderSide.none,
-                    )).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                ],
 
                 // 4. Bloque de Instalaciones Realizadas
                 installationsAsync.when(
@@ -576,19 +339,7 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.projectData['installation_phase'] != 'instalacion_realizada') ...[
-                    OutlinedButton.icon(
-                      onPressed: () => _scheduleInstallationVisit(context, ref),
-                      icon: const Icon(Icons.calendar_month, color: Colors.orange),
-                      label: Text(widget.projectData['installation_phase'] == 'visita_agendada_instalacion' ? 'Reprogramar Visita de Instalación' : 'Agendar Visita de Instalación'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+
                   ElevatedButton.icon(
                     onPressed: () async {
                       final result = await Navigator.push(
@@ -597,16 +348,26 @@ class _InstallationDetailScreenState extends ConsumerState<InstallationDetailScr
                           builder: (context) => InstallationFormScreen(projectData: widget.projectData),
                         ),
                       );
-                      if (result == true) {
+                      if (result != null) {
                         ref.invalidate(projectInstallationsProvider(projectIdStr));
                         ref.invalidate(installationProjectsProvider);
+                        if (result == 'albaran') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (ctx) => InstallationSignatureScreen(projectData: widget.projectData)),
+                          ).then((res) {
+                            if (res == true && context.mounted) {
+                              Navigator.pop(context, true);
+                            }
+                          });
+                        }
                       }
                     },
                     icon: const Icon(Icons.build),
                     label: const Text('Agregar Instalación'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.purple,
+                      backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 54),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

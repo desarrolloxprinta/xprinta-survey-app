@@ -95,15 +95,15 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
       // Logo & Colors
       final logoData = await rootBundle.load('assets/images/logo-xprinta-blanco.png');
       final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
-      final colorPrimary = PdfColor.fromHex('#9333ea'); // Purple accent for installations
+      final colorPrimary = PdfColor.fromHex('#fa8029'); // Orange Xprinta
       final colorDark = PdfColor.fromHex('#252930');
       final colorLight = PdfColor.fromHex('#f7f7f7');
       final colorGrey = PdfColor.fromHex('#5f6062');
 
-      // Prepare items table data from elements
-      List<String> rawElementos = [];
-      if (widget.projectData['elementos'] != null && widget.projectData['elementos'] is List) {
-        rawElementos = List<String>.from(widget.projectData['elementos']);
+      // Prepare items table data from installation_products
+      List<Map<String, dynamic>> products = [];
+      if (widget.projectData['installation_products'] != null && widget.projectData['installation_products'] is List) {
+        products = List<Map<String, dynamic>>.from(widget.projectData['installation_products']);
       }
 
       final clientName = widget.projectData['cliente_nombre_apellido'] ?? 'Cliente';
@@ -128,16 +128,8 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
                   pw.Image(logoImage, height: 40),
-                  pw.Text(
-                    'COMPROBANTE DE INSTALACIÓN',
-                    style: pw.TextStyle(
-                      font: fontHeading,
-                      fontSize: 18,
-                      color: colorPrimary,
-                      fontWeight: pw.FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
+                  // Solo el logo, sin texto
+
                 ],
               ),
             );
@@ -195,7 +187,7 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
               pw.Text('PRODUCTOS Y ELEMENTOS INSTALADOS', style: pw.TextStyle(font: fontHeading, fontSize: 14, color: colorDark, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 8),
               
-              if (rawElementos.isNotEmpty)
+              if (products.isNotEmpty)
                 pw.Table(
                   border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                   columnWidths: {
@@ -216,16 +208,23 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
                         ),
                       ],
                     ),
-                    ...rawElementos.map((elem) {
+                    ...products.map((prod) {
                       return pw.TableRow(
                         children: [
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text(_formatSlug(elem), style: const pw.TextStyle(fontSize: 10)),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(prod['titulo'] ?? '', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                                pw.SizedBox(height: 2),
+                                pw.Text(prod['descripcion'] ?? '', style: const pw.TextStyle(fontSize: 8)),
+                              ]
+                            )
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(8),
-                            child: pw.Text('1', style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.center),
+                            child: pw.Text(prod['cantidad']?.toString() ?? '1', style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.center),
                           ),
                         ],
                       );
@@ -241,6 +240,14 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
 
               pw.SizedBox(height: 20),
 
+              // 3. Texto legal de conformidad
+              pw.Text(
+                'Mediante la presente firma, el abajo firmante (cliente o representante autorizado) declara su entera conformidad con los trabajos de instalación descritos anteriormente. Se certifica que los elementos han sido entregados, instalados y revisados, y que se encuentran en perfectas condiciones de funcionamiento y acabado, de acuerdo a las especificaciones del proyecto contratado.',
+                style: const pw.TextStyle(fontSize: 10),
+                textAlign: pw.TextAlign.justify,
+              ),
+
+              pw.SizedBox(height: 40),
               // 3. Declaración de Conformidad Legal (eIDAS / Ley 6/2020)
               pw.Text('DECLARACIÓN DE CONFORMIDAD Y RECEPCIÓN', style: pw.TextStyle(font: fontHeading, fontSize: 14, color: colorDark, fontWeight: pw.FontWeight.bold)),
               pw.Divider(color: colorPrimary, thickness: 2),
@@ -329,7 +336,7 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
       final pdfBytes = await pdf.save();
       final projectId = widget.projectData['id'];
 
-      // Storage upload
+      // Storage upload - Usamos nombre único para evitar problemas de caché en el navegador
       final filename = 'comprobante_instalacion_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final path = 'instalaciones/$projectId/$filename';
       
@@ -337,6 +344,14 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
         path,
         pdfBytes,
       );
+
+      // Intentar borrar el registro anterior en BBDD para que no se duplique en la lista
+      try {
+        await supabase.from('files').delete().match({
+          'project_id': projectId,
+          'category': 'comprobante_instalacion',
+        });
+      } catch (_) {}
 
       // Save file record
       await supabase.from('files').insert({
@@ -430,13 +445,13 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.05),
+                  color: Theme.of(context).primaryColor.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.purple.withOpacity(0.15)),
+                  border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.15)),
                 ),
                 child: Column(
                   children: [
-                    const Text('Valoración del Servicio de Instalación', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.purple)),
+                    Text('Valoración del Servicio de Instalación', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).primaryColor)),
                     const SizedBox(height: 16),
                     _buildRatingSection('1. Puntualidad en la entrega/cita', _ratingPuntualidad, (val) => setState(() => _ratingPuntualidad = val)),
                     const Divider(height: 20),
@@ -447,6 +462,30 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Texto legal explicativo en la app
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.blue, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Mediante la presente firma, declaras tu entera conformidad con los trabajos de instalación. Certificas que los elementos han sido instalados y revisados en perfectas condiciones según lo acordado.',
+                        style: TextStyle(fontSize: 13, color: Colors.blue[900]),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
 
               const Text('Firma Digital del Receptor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
@@ -477,7 +516,7 @@ class _InstallationSignatureScreenState extends State<InstallationSignatureScree
                 onPressed: _generateAndUploadPdf,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.purple,
+                  backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

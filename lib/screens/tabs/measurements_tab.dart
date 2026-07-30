@@ -6,9 +6,13 @@ import '../../core/notification_service.dart';
 import '../measurement_detail_screen.dart';
 
 final projectsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final userId = supabase.auth.currentUser?.id;
+  if (userId == null) return [];
+
   final response = await supabase
       .from('projects')
       .select('id, nombre, direccion, measurement_phase, measurement_assigned_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, form_data, form_template_id, companies(nombre), mediciones(id, nombre)')
+      .eq('installer_id', userId)
       .order('measurement_assigned_date', ascending: false)
       .limit(100);
   return List<Map<String, dynamic>>.from(response);

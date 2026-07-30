@@ -350,8 +350,8 @@ class _MeasurementFormScreenState extends State<MeasurementFormScreen> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.photo_library, color: Colors.purple),
+                    decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(Icons.photo_library, color: Theme.of(context).primaryColor),
                   ),
                   title: const Text('Subir desde Galería', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Seleccionar múltiples fotos'),

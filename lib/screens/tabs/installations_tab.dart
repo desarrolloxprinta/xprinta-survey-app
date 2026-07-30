@@ -6,10 +6,14 @@ import '../../core/notification_service.dart';
 import '../installation_detail_screen.dart';
 
 final installationProjectsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  final userId = supabase.auth.currentUser?.id;
+  if (userId == null) return [];
+
   try {
     final response = await supabase
         .from('projects')
-        .select('id, nombre, direccion, installation_phase, measurement_phase, installation_assigned_date, scheduled_installation_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, form_data, form_template_id, companies(nombre), instalaciones(id, nombre), mediciones(id, nombre)')
+        .select('id, nombre, direccion, installation_phase, measurement_phase, installation_assigned_date, installation_scheduled_date, fecha_prevista_instalacion_fin, installation_completed_date, installation_installer_id, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, installation_blueprints, installation_products, form_data, form_template_id, companies(nombre), instalaciones(id, nombre), mediciones(id, nombre)')
+        .eq('installation_installer_id', userId)
         .order('created_at', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(response);
@@ -17,7 +21,8 @@ final installationProjectsProvider = FutureProvider.autoDispose<List<Map<String,
     // Fallback if installation columns not created yet
     final response = await supabase
         .from('projects')
-        .select('id, nombre, direccion, measurement_phase, measurement_assigned_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, form_data, form_template_id, companies(nombre), mediciones(id, nombre)')
+        .select('id, nombre, direccion, measurement_phase, measurement_assigned_date, scheduled_visit_date, descripcion, cliente_nombre_apellido, cliente_nombre_local, cliente_telefono, elementos, planos_tecnicos, installation_blueprints, installation_products, form_data, form_template_id, companies(nombre), mediciones(id, nombre), installation_phase, installation_assigned_date, installation_scheduled_date, fecha_prevista_instalacion_fin, installation_completed_date, installation_installer_id')
+        .eq('installation_installer_id', userId)
         .order('created_at', ascending: false)
         .limit(100);
     return List<Map<String, dynamic>>.from(response);
@@ -103,8 +108,11 @@ class _InstallationsTabState extends ConsumerState<InstallationsTab> {
               }
 
               final agendados = projects.where((p) => (p['installation_phase'] ?? '') == 'visita_agendada_instalacion').toList();
-              final asignados = projects.where((p) => (p['installation_phase'] ?? '') == 'asignado_instalacion' || (p['installation_phase'] ?? '') == 'desconocido' || (p['installation_phase'] ?? '') == '' || (p['installation_phase'] == null && (p['measurement_phase'] == 'medicion_realizada'))).toList();
               final instalados = projects.where((p) => (p['installation_phase'] ?? '') == 'instalacion_realizada').toList();
+              final asignados = projects.where((p) {
+                final phase = p['installation_phase'] ?? '';
+                return phase != 'visita_agendada_instalacion' && phase != 'instalacion_realizada';
+              }).toList();
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +242,7 @@ class _InstallationsTabState extends ConsumerState<InstallationsTab> {
       case 'asignado_instalacion':
       default:
         statusLabel = 'Asignado a Instalación';
-        statusColor = Colors.purple;
+        statusColor = Theme.of(context).primaryColor;
         break;
     }
     
@@ -251,8 +259,8 @@ class _InstallationsTabState extends ConsumerState<InstallationsTab> {
     }
 
     String? scheduledDateStr;
-    if (phaseStr == 'visita_agendada_instalacion' && p['scheduled_installation_date'] != null) {
-      DateTime visitDate = DateTime.parse(p['scheduled_installation_date'].toString()).toLocal();
+    if (phaseStr == 'visita_agendada_instalacion' && p['installation_scheduled_date'] != null) {
+      DateTime visitDate = DateTime.parse(p['installation_scheduled_date'].toString()).toLocal();
       scheduledDateStr = '${visitDate.day.toString().padLeft(2, '0')}/${visitDate.month.toString().padLeft(2, '0')}/${visitDate.year} ${visitDate.hour.toString().padLeft(2, '0')}:${visitDate.minute.toString().padLeft(2, '0')}';
       
       NotificationService().scheduleVisitReminder(
@@ -427,18 +435,18 @@ class _InstallationsTabState extends ConsumerState<InstallationsTab> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.05),
+                color: Theme.of(context).primaryColor.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.purple.withOpacity(0.15)),
+                border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.15)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Colors.purple, size: 16),
+                      Icon(Icons.check_circle_outline, color: Theme.of(context).primaryColor, size: 16),
                       const SizedBox(width: 8),
-                      Text('$installationsCount instalaciones realizadas', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.purple)),
+                      Text('$installationsCount instalaciones realizadas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Theme.of(context).primaryColor)),
                     ],
                   ),
                   if (installedNames.isNotEmpty) ...[

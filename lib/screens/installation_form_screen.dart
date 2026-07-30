@@ -31,20 +31,90 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
   Offset? _pinPosition;
   final GlobalKey _imageKey = GlobalKey();
 
+  // Products
+  String? _selectedProduct;
+  List<String> _productOptions = [];
+
   @override
   void initState() {
     super.initState();
-    if (widget.projectData['planos_tecnicos'] != null && widget.projectData['planos_tecnicos'] is List) {
-      List planos = widget.projectData['planos_tecnicos'];
-      for (var plano in planos) {
-        if (plano is Map && plano['blueprint_url'] != null && plano['blueprint_url'].toString().trim().isNotEmpty) {
-          _availableBlueprints.add(Map<String, dynamic>.from(plano));
-        }
-      }
-      if (_availableBlueprints.isNotEmpty) {
-        _blueprintUrl = _availableBlueprints.first['blueprint_url'];
+    List planos = [];
+    if (widget.projectData['installation_blueprints'] != null && widget.projectData['installation_blueprints'] is List) {
+      planos = widget.projectData['installation_blueprints'];
+    } else if (widget.projectData['planos_tecnicos'] != null && widget.projectData['planos_tecnicos'] is List) {
+      planos = widget.projectData['planos_tecnicos'];
+    }
+    
+    for (var plano in planos) {
+      if (plano is Map && plano['blueprint_url'] != null && plano['blueprint_url'].toString().trim().isNotEmpty) {
+        _availableBlueprints.add(Map<String, dynamic>.from(plano));
       }
     }
+    if (_availableBlueprints.isNotEmpty) {
+      _blueprintUrl = _availableBlueprints.first['blueprint_url'];
+    }
+
+    if (widget.projectData['installation_products'] != null && widget.projectData['installation_products'] is List) {
+      final prods = widget.projectData['installation_products'] as List;
+      for (var p in prods) {
+        if (p is Map && p['titulo'] != null && p['titulo'].toString().trim().isNotEmpty) {
+          if (!_productOptions.contains(p['titulo'])) {
+            _productOptions.add(p['titulo']);
+          }
+        }
+      }
+    }
+    _productOptions.add('Otro (Especificar)');
+    _selectedProduct = _productOptions.first;
+    if (_selectedProduct != 'Otro (Especificar)') {
+      _nombreElementoCtrl.text = _selectedProduct!;
+      _updatePinForProduct(_selectedProduct!);
+    }
+  }
+
+  void _updatePinForProduct(String productName) {
+    if (productName == 'Otro (Especificar)') {
+      setState(() => _pinPosition = null);
+      return;
+    }
+
+    String? productId;
+    if (widget.projectData['installation_products'] != null && widget.projectData['installation_products'] is List) {
+      final prods = widget.projectData['installation_products'] as List;
+      for (var p in prods) {
+        if (p is Map && p['titulo'] == productName) {
+          productId = p['id']?.toString();
+          break;
+        }
+      }
+    }
+
+    final targetTitle = productName.trim().toLowerCase();
+    final targetId = productId?.trim().toLowerCase();
+
+    for (var blueprint in _availableBlueprints) {
+      if (blueprint['dots'] != null && blueprint['dots'] is List) {
+        final dots = blueprint['dots'] as List;
+        for (var dot in dots) {
+          if (dot is Map && dot['product_id'] != null) {
+            final dotProductId = dot['product_id'].toString().trim().toLowerCase();
+            if ((targetId != null && dotProductId == targetId) || dotProductId == targetTitle) {
+              setState(() {
+                _blueprintUrl = blueprint['blueprint_url'];
+                _pinPosition = Offset(
+                  (dot['x'] as num).toDouble() / 100,
+                  (dot['y'] as num).toDouble() / 100,
+                );
+              });
+              return;
+            }
+          }
+        }
+      }
+    }
+    
+    // Clear pin if no matching dot is found
+    setState(() => _pinPosition = null);
   }
 
   @override
@@ -86,19 +156,7 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
     }
   }
 
-  void _onBlueprintTap(TapDownDetails details) {
-    if (_imageKey.currentContext == null) return;
-    RenderBox box = _imageKey.currentContext!.findRenderObject() as RenderBox;
-    Offset localPosition = box.globalToLocal(details.globalPosition);
-    
-    double xRel = localPosition.dx / box.size.width;
-    double yRel = localPosition.dy / box.size.height;
-    
-    setState(() {
-      _pinPosition = Offset(xRel, yRel);
-    });
-  }
-
+  // Eliminado _onBlueprintTap porque ahora es solo indicador visual
   Future<List<String>> _uploadPhotos(List<XFile> photos, String projectId) async {
     List<String> urls = [];
     for (var photo in photos) {
@@ -171,7 +229,7 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
           const SnackBar(content: Text('Instalación registrada correctamente!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
         
-        final bool? continuar = await showDialog<bool>(
+        final String? continuar = await showDialog<String>(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
@@ -180,18 +238,23 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
             content: const Text('¿Deseas registrar otra instalación o elemento en este proyecto?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('No, volver al proyecto'),
+                onPressed: () => Navigator.pop(ctx, 'volver'),
+                child: const Text('Volver al proyecto'),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Sí, añadir otra'),
+                onPressed: () => Navigator.pop(ctx, 'albaran'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('Generar Albarán'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, 'otra'),
+                child: const Text('Añadir otra'),
               ),
             ],
           ),
         );
         
-        if (continuar == true) {
+        if (continuar == 'otra') {
           setState(() {
             _nombreElementoCtrl.clear();
             _observacionesCtrl.clear();
@@ -199,6 +262,8 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
             _fotosInstalacion.clear();
             _pinPosition = null;
           });
+        } else if (continuar == 'albaran') {
+          Navigator.pop(context, 'albaran');
         } else {
           Navigator.pop(context, true);
         }
@@ -242,7 +307,7 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
                 onPressed: () => _showPickerOptions(isElemento),
                 icon: const Icon(Icons.add_a_photo),
                 label: const Text('Añadir Fotos'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, foregroundColor: Colors.white),
               ),
             ),
           )
@@ -330,8 +395,8 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt, color: Colors.purple),
+                    decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                    child: Icon(Icons.camera_alt, color: Theme.of(context).primaryColor),
                   ),
                   title: const Text('Tomar Foto', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Usar la cámara del dispositivo'),
@@ -395,23 +460,49 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
               ),
               const SizedBox(height: 16),
               
-              TextField(
-                controller: _nombreElementoCtrl,
+              DropdownButtonFormField<String>(
+                value: _selectedProduct,
                 decoration: InputDecoration(
-                  labelText: 'Nombre del elemento instalado',
-                  hintText: 'Ej: Rótulo de entrada, Vinilo escaparate...',
+                  labelText: 'Elemento a instalar',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                items: _productOptions.map((String val) {
+                  return DropdownMenuItem(value: val, child: Text(val));
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _selectedProduct = val;
+                      if (val != 'Otro (Especificar)') {
+                        _nombreElementoCtrl.text = val;
+                        _updatePinForProduct(val);
+                      } else {
+                        _nombreElementoCtrl.clear();
+                      }
+                    });
+                  }
+                },
               ),
+              if (_selectedProduct == 'Otro (Especificar)') ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _nombreElementoCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Nombre del elemento instalado',
+                    hintText: 'Ej: Rótulo de entrada, Vinilo escaparate...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               
               // Switcher de Recepción de Material por parte de Xprinta
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.purple.withOpacity(0.05),
+                  color: Theme.of(context).primaryColor.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                  border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.2)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -434,7 +525,7 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
                     ),
                     Switch(
                       value: _materialRecibido,
-                      activeColor: Colors.purple,
+                      activeColor: Theme.of(context).primaryColor,
                       onChanged: (val) {
                         setState(() {
                           _materialRecibido = val;
@@ -463,8 +554,8 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
               const SizedBox(height: 32),
 
               if (_blueprintUrl != null) ...[
-                Text('Marcar Posición de Instalación en Plano', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
+                Text('Ubicación en el Plano', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
                 
                 if (_availableBlueprints.length > 1) ...[
                   DropdownButtonFormField<String>(
@@ -494,40 +585,39 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
                   const SizedBox(height: 12),
                 ],
                 
-                Text('Toca la imagen para fijar el punto donde se instaló', style: textTheme.bodySmall?.copyWith(color: Colors.grey)),
-                const SizedBox(height: 12),
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.purple.withOpacity(0.5), width: 2),
+                    border: Border.all(color: Theme.of(context).primaryColor.withOpacity(0.5), width: 2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   clipBehavior: Clip.hardEdge,
                   child: InteractiveViewer(
                     minScale: 0.5,
                     maxScale: 4.0,
-                    child: GestureDetector(
-                      onTapDown: _onBlueprintTap,
-                      child: Stack(
-                        children: [
-                          Image.network(
-                            _blueprintUrl!,
-                            key: _imageKey,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            loadingBuilder: (ctx, child, progress) {
-                              if (progress == null) return child;
-                              return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
-                            },
-                            errorBuilder: (ctx, err, stack) => const SizedBox(height: 200, child: Center(child: Text('Error cargando plano'))),
-                          ),
-                          if (_pinPosition != null && _imageKey.currentContext != null)
-                            Positioned(
-                              left: _pinPosition!.dx * (_imageKey.currentContext!.findRenderObject() as RenderBox).size.width - 12,
-                              top: _pinPosition!.dy * (_imageKey.currentContext!.findRenderObject() as RenderBox).size.height - 24,
-                              child: const Icon(Icons.location_on, color: Colors.purple, size: 28),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          _blueprintUrl!,
+                          key: _imageKey,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return const SizedBox(height: 200, child: Center(child: CircularProgressIndicator()));
+                          },
+                          errorBuilder: (ctx, err, stack) => const SizedBox(height: 200, child: Center(child: Text('Error cargando plano'))),
+                        ),
+                        if (_pinPosition != null)
+                          Positioned.fill(
+                            child: Align(
+                              alignment: FractionalOffset(_pinPosition!.dx, _pinPosition!.dy),
+                              child: Transform.translate(
+                                offset: const Offset(0, -14),
+                                child: Icon(Icons.location_on, color: Theme.of(context).primaryColor, size: 28),
+                              ),
                             ),
-                        ],
-                      ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -540,7 +630,7 @@ class _InstallationFormScreenState extends State<InstallationFormScreen> {
                 label: const Text('Guardar Instalación'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.purple,
+                  backgroundColor: Theme.of(context).primaryColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
