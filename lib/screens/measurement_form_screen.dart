@@ -174,32 +174,44 @@ class _MeasurementFormScreenState extends State<MeasurementFormScreen> {
           const SnackBar(content: Text('Medición registrada!', style: TextStyle(color: Colors.white)), backgroundColor: Colors.green),
         );
         
-        final bool? continuar = await showDialog<bool>(
+        final String? accion = await showDialog<String>(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
             title: const Text('Medición Guardada'),
-            content: const Text('¿Deseas medir otro rótulo o elemento en este proyecto?'),
+            content: const Text('¿Qué deseas hacer ahora?'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('No, volver al proyecto'),
+                onPressed: () => Navigator.pop(ctx, 'volver'),
+                child: const Text('Volver al proyecto'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'albaran'),
+                child: const Text('Finalizar y Generar Albarán', style: TextStyle(color: Colors.orange)),
               ),
               ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
+                onPressed: () => Navigator.pop(ctx, 'seguir'),
                 child: const Text('Sí, seguir midiendo'),
               ),
             ],
           ),
         );
         
-        if (continuar == true) {
+        if (accion == 'seguir') {
           setState(() {
             _nombreElementoCtrl.clear();
             _fotosElemento.clear();
             _fotosMedidas.clear();
             _pinPosition = null;
           });
+        } else if (accion == 'albaran') {
+          // Navegar a la pantalla de firma (albarán de medición)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => SignatureScreen(projectData: widget.projectData),
+            ),
+          );
         } else {
           Navigator.pop(context, true); // Retornar a MeasurementDetailScreen
         }

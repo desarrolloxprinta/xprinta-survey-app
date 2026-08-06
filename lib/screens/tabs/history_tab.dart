@@ -4,17 +4,52 @@ import '../../main.dart'; // supabase
 import '../../widgets/modern_card.dart';
 import '../measurement_history_detail_screen.dart';
 
+import '../installation_history_detail_screen.dart';
+
 final historyProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
   final user = supabase.auth.currentUser;
   if (user == null) return [];
   
-  final response = await supabase
+  // Fetch mediciones
+  final medicionesFuture = supabase
       .from('mediciones')
       .select('*, projects(id, nombre, direccion, companies(id, nombre, logo_url))')
-      .eq('measured_by', user.id)
-      .order('measurement_date', ascending: false);
+      .eq('measured_by', user.id);
       
-  return List<Map<String, dynamic>>.from(response);
+  // Fetch instalaciones
+  final instalacionesFuture = supabase
+      .from('instalaciones')
+      .select('*, projects(id, nombre, direccion, companies(id, nombre, logo_url))')
+      .eq('installed_by', user.id);
+      
+  final results = await Future.wait([medicionesFuture, instalacionesFuture]);
+  
+  final mediciones = List<Map<String, dynamic>>.from(results[0]).map((m) {
+    return {
+      ...m,
+      'history_type': 'medicion',
+      'history_date': m['measurement_date'],
+    };
+  }).toList();
+  
+  final instalaciones = List<Map<String, dynamic>>.from(results[1]).map((i) {
+    return {
+      ...i,
+      'history_type': 'instalacion',
+      'history_date': i['installation_date'] ?? i['created_at'],
+    };
+  }).toList();
+  
+  final combined = [...mediciones, ...instalaciones];
+  
+  // Sort by date descending
+  combined.sort((a, b) {
+    final dateA = DateTime.tryParse(a['history_date']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final dateB = DateTime.tryParse(b['history_date']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return dateB.compareTo(dateA);
+  });
+      
+  return combined;
 });
 
 class HistoryTab extends ConsumerStatefulWidget {
@@ -37,12 +72,12 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 120),
       children: [
         Text(
-          'Mediciones Completadas',
+          'Historial de Actividad',
           style: textTheme.titleLarge?.copyWith(fontSize: 28),
         ),
         const SizedBox(height: 8),
         Text(
-          'Explora tus tomas de medida organizadas por proyecto',
+          'Explora tus tomas de medida e instalaciones',
           style: textTheme.bodyMedium?.copyWith(fontSize: 16),
         ),
         const SizedBox(height: 24),
@@ -164,7 +199,7 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
                         children: [
                           Icon(Icons.history, size: 64, color: Theme.of(context).primaryColor.withOpacity(0.5)),
                           const SizedBox(height: 16),
-                          Text('No hay mediciones para mostrar', style: textTheme.bodyMedium),
+                          Text('No hay actividad para mostrar', style: textTheme.bodyMedium),
                         ],
                       ),
                     ),
@@ -263,21 +298,32 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
           const SizedBox(height: 8),
           
           ...measurements.map((m) {
-            final elementTitle = m['nombre'] ?? 'Elemento sin nombre';
+            final isInstalacion = m['history_type'] == 'instalacion';
+            final elementTitle = m['nombre'] ?? (isInstalacion ? 'Instalación de proyecto' : 'Elemento sin nombre');
+            
             String dateStr = '';
-            if (m['measurement_date'] != null) {
-              final date = DateTime.parse(m['measurement_date'].toString()).toLocal();
+            if (m['history_date'] != null) {
+              final date = DateTime.parse(m['history_date'].toString()).toLocal();
               dateStr = '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
             }
             
             return InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MeasurementHistoryDetailScreen(measurementData: m),
-                  ),
-                );
+                if (isInstalacion) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InstallationHistoryDetailScreen(installationData: m),
+                    ),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MeasurementHistoryDetailScreen(measurementData: m),
+                    ),
+                  );
+                }
               },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
@@ -285,16 +331,40 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
                 child: Row(
                   children: [
                     Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle),
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isInstalacion ? Colors.orange.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        isInstalacion ? Icons.handyman : Icons.straighten,
+                        size: 16,
+                        color: isInstalacion ? Colors.orange : Colors.green,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(elementTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          Row(
+                            children: [
+                              Expanded(child: Text(elementTitle, style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isInstalacion ? Colors.orange : Colors.green,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isInstalacion ? 'INST' : 'MED',
+                                  style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
                           if (dateStr.isNotEmpty)
                             Text(dateStr, style: textTheme.bodySmall),
                         ],
